@@ -1,19 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
 public class PlayerInfo : MonoBehaviour
 {
     #region Nested classes
-
-    [Serializable]
-    public class Creature
-    {
-        public string Id;
-        public int Level;
-        public StatType statType;
-    }
 
     [Serializable]
     public class HeroStats
@@ -27,6 +20,16 @@ public class PlayerInfo : MonoBehaviour
 
     #region Fields
 
+    public static readonly List<string> AllAvailableCreatures = new List<string>()
+    {
+        "creature_1",
+        "creature_2",
+        "creature_3",
+        "creature_4",
+        "creature_5",
+    };
+
+
     private static readonly Dictionary<string, StatType> CreatureByStatTypes = new Dictionary<string, StatType>()
     {
         { "creature_1", StatType.Strength },
@@ -39,7 +42,7 @@ public class PlayerInfo : MonoBehaviour
     private const string maxLevelReachedKey = "level_reached";
     private const string coinsKey = "coins";
     private const string heroStatsKey = "hero_stats";
-    private const string creaturesKey = "creatures";
+    private const string creatureKeyPrefix = "creature";
 
 
     [ShowInInspector] private int maxLevelReached;
@@ -47,8 +50,8 @@ public class PlayerInfo : MonoBehaviour
 
     [SerializeField] private HeroStats heroStats;
 
-    [ShowInInspector] private List<Creature> availableCreatures = new List<Creature>();
-    [ShowInInspector] private List<Creature> activeParty = new List<Creature>();
+    [ShowInInspector] private List<CreatureInfo> availableCreatures = new List<CreatureInfo>();
+    [ShowInInspector] private List<CreatureInfo> activeParty = new List<CreatureInfo>();
 
 
     private static PlayerInfo Instance;
@@ -81,7 +84,7 @@ public class PlayerInfo : MonoBehaviour
         }
     }
 
-    public static IReadOnlyList<Creature> AvailableCreatures => Instance.availableCreatures;
+    public static IReadOnlyList<CreatureInfo> AvailableCreatures => Instance.availableCreatures;
 
     public static int SelectedLevel { get; set; } = 1;
 
@@ -112,23 +115,23 @@ public class PlayerInfo : MonoBehaviour
 
     public static void AddNewCreature(string creatureId)
     {
-        Creature existingCreature = Instance.availableCreatures.Find(creature => creature.Id == creatureId);
+        CreatureInfo existingCreatureInfo = Instance.availableCreatures.Find(creature => creature.Id == creatureId);
 
-        if (existingCreature != null)
+        if (existingCreatureInfo != null)
         {
             return;
         }
 
-        Creature creature = new Creature()
+        CreatureInfo creatureInfo = new CreatureInfo()
         {
             Id = creatureId,
-            Level = 1,
+            Level = 0,
             statType = CreatureByStatTypes[creatureId],
         };
 
-        Instance.availableCreatures.Add(creature);
+        Instance.availableCreatures.Add(creatureInfo);
 
-        SaveAllCreaturesInfo();
+        SaveCreatureInfo(creatureId);
     }
 
 
@@ -145,31 +148,67 @@ public class PlayerInfo : MonoBehaviour
     }
 
 
-    public static void UpgradeCreature(string creatureId)
+    public static bool TryUpgradeCreature(string creatureId)
     {
-        Creature existingCreature = GetCreature(creatureId);
-        existingCreature.Level++;
+        CreatureInfo creatureInfo = GetCreature(creatureId);
 
-        SaveAllCreaturesInfo();
+        if (creatureInfo.CardsCount < creatureInfo.CardsToLevelUp)
+        {
+            return false;
+        }
+
+        creatureInfo.CardsCount -= creatureInfo.CardsToLevelUp;
+        creatureInfo.Level++;
+
+        SaveCreatureInfo(creatureId);
+
+        return true;
     }
 
 
-    public static Creature GetCreature(string creatureId)
+    public static void AddCreatureCards(string creatureId, int amount)
     {
-        Creature existingCreature = Instance.availableCreatures.Find(creature => creature.Id == creatureId);
+        CreatureInfo creatureInfo = GetCreature(creatureId);
+        creatureInfo.CardsCount += amount;
 
-        if (existingCreature == null)
+        SaveCreatureInfo(creatureId);
+    }
+
+
+    public static int GetCreaturesBonusForStat(StatType statType)
+    {
+        int bonus = 0;
+
+        for (int i = 0; i < AvailableCreatures.Count; i++)
+        {
+            if (AvailableCreatures[i].statType == statType)
+            {
+                bonus += AvailableCreatures[i].StatBonus;
+            }
+        }
+
+        return bonus;
+    }
+
+
+    public static CreatureInfo GetCreature(string creatureId)
+    {
+        CreatureInfo existingCreatureInfo = Instance.availableCreatures.Find(creature => creature.Id == creatureId);
+
+        if (existingCreatureInfo == null)
         {
             throw new ArgumentException("Creature with this Id is unavailable");
         }
 
-        return existingCreature;
+        return existingCreatureInfo;
     }
 
 
-    private static void SaveAllCreaturesInfo()
+    private static void SaveCreatureInfo(string creatureId)
     {
-        PlayerPrefs.SetString(creaturesKey, JsonUtility.ToJson(Instance.availableCreatures));
+        string creatureKey = $"{creatureKeyPrefix}_{creatureId}";
+
+        PlayerPrefs.SetString(creatureKey, JsonUtility.ToJson(GetCreature(creatureId)));
         PlayerPrefs.Save();
     }
 
@@ -202,11 +241,35 @@ public class PlayerInfo : MonoBehaviour
             SaveHeroStats();
         }
 
-        string creaturesJson = PlayerPrefs.GetString(creaturesKey, "");
+        for (int i = 0; i < AllAvailableCreatures.Count; i++)
+        {
+            string creatureKey = $"{creatureKeyPrefix}_{AllAvailableCreatures[i]}";
 
-        availableCreatures = !string.IsNullOrEmpty(creaturesJson) ?
-            JsonUtility.FromJson<List<Creature>>(creaturesJson) :
-            new List<Creature>();
+            string creatureJson = PlayerPrefs.GetString(creatureKey, null);
+
+            if (!string.IsNullOrEmpty(creatureJson))
+            {
+                CreatureInfo creatureInfo = JsonUtility.FromJson<CreatureInfo>(creatureJson);
+                Instance.availableCreatures.Add(creatureInfo);
+            }
+            else
+            {
+                AddNewCreature(AllAvailableCreatures[i]);
+            }
+        }
+
+        //TODO Make 'availableCreatures' saveable!!!
+
+        // string creaturesJson = PlayerPrefs.GetString(creaturesKey, "");
+
+        // availableCreatures = JsonUtility.FromJson<List<CreatureInfo>>(creaturesJson);
+        //
+        // if (availableCreatures == null)
+        // {
+        // availableCreatures = new List<CreatureInfo>();
+        // AddAllCreatures();
+
+        // }
     }
 
     #endregion

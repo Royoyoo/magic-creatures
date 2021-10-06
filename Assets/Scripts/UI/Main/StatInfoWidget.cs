@@ -37,7 +37,7 @@ public class StatInfoWidget : UiWidget
     public void UpdateStat()
     {
         int heroStat = PlayerInfo.GetHeroStat(statType);
-        int activePartyStat = 0;
+        int activePartyStat = PlayerInfo.GetCreaturesBonusForStat(statType);
 
         totalStatText.text = $"{heroStat} + {activePartyStat} = {heroStat + activePartyStat}";
 

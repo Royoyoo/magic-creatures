@@ -472,6 +472,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxLike: 100
   likeBarTransform: {fileID: 953256689997867628}
+  creatureName: {fileID: 2542420586533867358}
   miniGame: {fileID: 30936252591710875}
 --- !u!1 &3351962709786731601
 GameObject:

@@ -67,6 +67,10 @@ public class CommonLevel : MonoBehaviour
 
     private void RemoveCreature(Creature targetCreature)
     {
+        int cardsAmount = Random.Range(1, 4);
+
+        PlayerInfo.AddCreatureCards(targetCreature.CreatureId, cardsAmount);
+
         activeCreatures.Remove(targetCreature);
 
         creaturesCaught++;
@@ -87,8 +91,10 @@ public class CommonLevel : MonoBehaviour
         List<Transform> availablePoints = spawnPoints.Where(point => point.childCount == 0).ToList();
         Transform randomPoint = availablePoints[Random.Range(0, availablePoints.Count)];
 
+        string creatureId = PlayerInfo.AllAvailableCreatures[Random.Range(0, PlayerInfo.AllAvailableCreatures.Count)];
+
         Creature newCreature = Instantiate(creaturePrefab, randomPoint);
-        newCreature.Initialize(RemoveCreature, HideAllCreatureMiniGame);
+        newCreature.Initialize(creatureId, RemoveCreature, HideAllCreatureMiniGame);
 
         activeCreatures.Add(newCreature);
     }

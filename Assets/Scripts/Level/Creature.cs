@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 
 public class Creature : MonoBehaviour
@@ -10,10 +11,21 @@ public class Creature : MonoBehaviour
 
     [SerializeField] private float maxLike = 100.0f;
     [SerializeField] private Transform likeBarTransform;
+    [SerializeField] private TextMeshPro creatureName;
 
     [SerializeField] private MiniGame miniGame;
 
+
     private float currentLike = 0.0f;
+    private string creatureId;
+
+    #endregion
+
+
+
+    #region Properties
+
+    public string CreatureId => creatureId;
 
     #endregion
 
@@ -21,10 +33,13 @@ public class Creature : MonoBehaviour
 
     #region Methods
 
-    public void Initialize(Action<Creature> removeCreatureCallback, Action hideAllMiniGameCallback)
+    public void Initialize(string creatureId, Action<Creature> removeCreatureCallback, Action hideAllMiniGameCallback)
     {
+        this.creatureId = creatureId;
         this.removeCreatureCallback = removeCreatureCallback;
         this.hideAllMiniGameCallback = hideAllMiniGameCallback;
+
+        creatureName.text = creatureId;
 
         miniGame.Initialize();
 
