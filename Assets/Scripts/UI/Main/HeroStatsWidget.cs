@@ -24,6 +24,12 @@ public class HeroStatsWidget : UiWidget
     }
 
 
+    public override void OnShow()
+    {
+        UpdateStats();
+    }
+
+
     private void UpdateStats()
     {
         for (int i = 0; i < statInfoWidget.Count; i++)

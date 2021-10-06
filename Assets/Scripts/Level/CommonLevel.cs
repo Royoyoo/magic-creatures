@@ -10,6 +10,8 @@ public class CommonLevel : MonoBehaviour
     [SerializeField] private int appearedCreaturesCount = 3;
     [SerializeField] private float levelTime = 30.0f;
 
+    [SerializeField] private HeroCharacter heroCharacter;
+    [SerializeField] private BossCharacter bossCharacter;
     [SerializeField] private Creature creaturePrefab;
     [SerializeField] private List<Transform> spawnPoints;
 
@@ -42,6 +44,9 @@ public class CommonLevel : MonoBehaviour
         levelStartTime = Time.time;
         creaturesToWin = PlayerInfo.SelectedLevel * 2;
 
+        heroCharacter.BreakInteractionCallback = HideAllCreatureMiniGame;
+        bossCharacter?.Initialize(activeCreatures);
+
         SpawnCreatures();
 
         DOVirtual
@@ -53,6 +58,9 @@ public class CommonLevel : MonoBehaviour
     public void Deinitialize()
     {
         DOTween.Kill(this);
+
+        heroCharacter.Deinitialize();
+        bossCharacter?.Deinitialize();
     }
 
 
@@ -65,24 +73,30 @@ public class CommonLevel : MonoBehaviour
     }
 
 
-    private void RemoveCreature(Creature targetCreature)
+    public void ClickCreature(Creature creature)
     {
-        int cardsAmount = Random.Range(1, 4);
+        heroCharacter.SetDestination(creature);
+    }
 
-        PlayerInfo.AddCreatureCards(targetCreature.CreatureId, cardsAmount);
+
+    private void RemoveCreature(Creature targetCreature, bool removedByHero)
+    {
+        if (removedByHero)
+        {
+            int cardsAmount = Random.Range(1, 4);
+            PlayerInfo.AddCreatureCards(targetCreature.CreatureId, cardsAmount);
+
+            creaturesCaught++;
+
+            if (creaturesCaught >= creaturesToWin)
+            {
+                LevelManager.WinLevel();
+            }
+        }
 
         activeCreatures.Remove(targetCreature);
 
-        creaturesCaught++;
-
-        if (creaturesCaught >= creaturesToWin)
-        {
-            LevelManager.WinLevel();
-        }
-        else
-        {
-            SpawnNewCreature();
-        }
+        SpawnNewCreature();
     }
 
 
@@ -94,7 +108,10 @@ public class CommonLevel : MonoBehaviour
         string creatureId = PlayerInfo.AllAvailableCreatures[Random.Range(0, PlayerInfo.AllAvailableCreatures.Count)];
 
         Creature newCreature = Instantiate(creaturePrefab, randomPoint);
-        newCreature.Initialize(creatureId, RemoveCreature, HideAllCreatureMiniGame);
+        newCreature.Initialize(creatureId);
+        newCreature.RemoveCreatureCallback = RemoveCreature;
+        newCreature.HideAllMiniGameCallback = HideAllCreatureMiniGame;
+        newCreature.CreatureClickedCallback = ClickCreature;
 
         activeCreatures.Add(newCreature);
     }

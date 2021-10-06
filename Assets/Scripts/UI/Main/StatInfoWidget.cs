@@ -27,7 +27,7 @@ public class StatInfoWidget : UiWidget
     {
         statName.text = statType.ToString();
         upgradeButtonText.text = $"Upgrade\n{UpgradePrice}$";
-        
+
         UpdateStat();
 
         upgradeButton.onClick.AddListener(TryUpgradeStat);

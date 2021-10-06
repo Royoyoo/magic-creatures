@@ -101,6 +101,7 @@ public class UiManager : MonoBehaviour
         if (uiElement != null)
         {
             uiElement.uiWidget.gameObject.SetActive(isActive);
+            uiElement.uiWidget.OnShow();
         }
         else
         {

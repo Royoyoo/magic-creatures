@@ -6,8 +6,9 @@ public class Creature : MonoBehaviour
 {
     #region Fields
 
-    private Action<Creature> removeCreatureCallback;
-    private Action hideAllMiniGameCallback;
+    public Action<Creature, bool> RemoveCreatureCallback;
+    public Action<Creature> CreatureClickedCallback;
+    public Action HideAllMiniGameCallback;
 
     [SerializeField] private float maxLike = 100.0f;
     [SerializeField] private Transform likeBarTransform;
@@ -33,18 +34,21 @@ public class Creature : MonoBehaviour
 
     #region Methods
 
-    public void Initialize(string creatureId, Action<Creature> removeCreatureCallback, Action hideAllMiniGameCallback)
+    public void Initialize(string creatureId)
     {
         this.creatureId = creatureId;
-        this.removeCreatureCallback = removeCreatureCallback;
-        this.hideAllMiniGameCallback = hideAllMiniGameCallback;
-
         creatureName.text = creatureId;
 
         miniGame.Initialize();
 
         HideMiniGame();
         UpdateLikeBar();
+    }
+
+
+    public void ClickCreature()
+    {
+        CreatureClickedCallback?.Invoke(this);
     }
 
 
@@ -67,9 +71,16 @@ public class Creature : MonoBehaviour
     }
 
 
+    public void RemoveByBoss()
+    {
+        RemoveCreatureCallback?.Invoke(this, false);
+
+        Destroy(this.gameObject);
+    }
+
     private void ShowMiniGame()
     {
-        hideAllMiniGameCallback?.Invoke();
+        HideAllMiniGameCallback?.Invoke();
         miniGame.gameObject.SetActive(true);
     }
 
@@ -98,7 +109,7 @@ public class Creature : MonoBehaviour
 
     private void Remove()
     {
-        removeCreatureCallback?.Invoke(this);
+        RemoveCreatureCallback?.Invoke(this, true);
 
         Destroy(this.gameObject);
     }
